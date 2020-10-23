@@ -94,5 +94,36 @@ This also deletes underlying pods
 update
 `kubectl scale -replicas=6 -f replicaset-definition.yml`
 
-
 `kubectl scale --replicas=6 -f replicaset-definition.yml`
+
+## Namcespaces
+
+```
+apiVersion: v1
+kind: Namcespace
+metadata:
+name: dev
+```
+
+`kubectl create namespace dev`
+
+`kubectl config set-context $(kubectl config current-context) --namespace dev`
+
+Globally set namespace
+
+## Resource Quota
+
+```
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-quota
+  namespace: dev
+spec:
+  hard:
+    pods: "10"
+    requests.cpu: "4"
+    requests.memory: 5Gi
+    limits.cpu: "10"
+    limits.memory: 10Gi
+```
