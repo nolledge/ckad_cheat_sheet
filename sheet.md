@@ -127,3 +127,102 @@ spec:
     limits.cpu: "10"
     limits.memory: 10Gi
 ```
+
+## Commands and Arguments
+
+*  Entypoint in docker corresponds to command inside containers definition
+*  CMD in dockerfile corresponds to args in containers definition
+
+## Config Maps
+
+* Detatch configuration from  definition file
+
+create with:
+
+imperative: `kubectl create configmap <config-name> --from-literal=<key>=<value>`
+* also possible to load configuration from a file instead of defining multiple from-literal params
+
+declarative: `kubectl create -f file.yaml`
+
+### File Structure
+
+```
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  APP_COLOR: blue
+  APP_MODE: prod
+  ```
+### Reference config map in pod
+
+Whole Env
+```
+spec: 
+containers:
+    - ...
+    envFrom:
+        - configMapRef:
+            name: app-config
+        ```
+Specific Key 
+```
+spec: 
+containers:
+    - ...
+    env:
+      - name: APP_COLORR
+        valueFrom:
+          configMapKeyRef:
+            name: app-config
+            key: APP_COLOR
+        ```
+Volume
+```
+spec: 
+containers:
+    - ...
+    volumes:
+      - name: app-config-volume
+        configMap:
+          name: app-config
+        ```
+
+## Secrets
+
+* Similar to configmaps, but stored encoded
+
+
+### Reference secrets in pod
+
+Whole Env
+```
+spec: 
+containers:
+    - ...
+    envFrom:
+        - secretRef:
+            name: app-config
+        ```
+Specific Key 
+```
+spec: 
+containers:
+    - ...
+    env:
+      - name: DB_Password
+        valueFrom:
+          secretKeyRef:
+            name: app-secret
+            key: DB_Password
+        ```
+Volume
+```
+spec: 
+containers:
+    - ...
+    volumes:
+      - name: app-secret-volume
+        secret:
+          name: app-config
