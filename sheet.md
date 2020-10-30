@@ -226,3 +226,66 @@ containers:
       - name: app-secret-volume
         secret:
           name: app-config
+```
+## Security Context
+
+* Containers per default run as root
+* Security context can be defined on pod or on container level
+* Even the root user has limited capabilites on the docker machine
+* Keeps the user from manipulating the shared kernel on the host machine
+* Capabilities can be granted from within the securityContext
+
+    ```
+    ...
+    securityContext:
+      runAsUser: 1000
+      capabilites:
+        add: ["SYS_TIME"]
+        ```
+## Resources
+
+* Resources node can be defined per container in the pod
+
+    ```
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: 1
+      limit:
+        memory: "2Gi"
+        cpu: 2
+        ```
+## Taints and Tolerance
+
+* Mechanism to make a node only accept certain pods
+* A node can be tainted 
+* Only Pods which are tolerant to that taint can be scheduled on this node
+* A not tainted node will also accept pods with certain tolerances
+* Master node is tainted per default
+
+    `kubectl taint nodes node-name key=value:taint-effect`
+
+taintEffect: what happens to PODs that do not tolearte this taint? 
+
+possible values: NoSchedule | PreferNoSchedule | NoExecute
+
+## Node Selectors
+
+* Assign Pods to certain nodes with a selector
+
+    ```
+    kind: Pod
+    ...
+    spec:
+      containsers:
+        ...
+      nodeSelector:
+        size: Large
+            ```
+
+* The node selector refers to labels assigned on a node
+
+    `kubectl label nodes <node-name> <label-key>=<label-value>`
+
+* Has its limits: you cant say on label Large or Medium
+* Can't say something like go to any node which is not small
