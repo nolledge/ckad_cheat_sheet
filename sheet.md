@@ -33,16 +33,16 @@ spec:
       image: nginx
 ```
 
-`kubectl run nginx --image nginx `
+`kubectl run nginx --image nginx`
 creates a new pod named nginx based on the nginx image from dockerhub
 
-`kubectl get pods `
+`kubectl get pods`
 outputs a list of available pods
 
 `kubectl describe pod mypod`
 show pod details
 
-`kubectl create -f pod-definition.yaml `
+`kubectl create -f pod-definition.yaml`
 Create Pod from yaml file
 
 `kubectl get pod <pod-name> -o yaml > pod-definition.yaml`
@@ -61,7 +61,7 @@ apiVersion: v2
 * Monitors Pods
 * Matches via labels
 
-    ```
+```
 apiVersion: apps/v1
 kind: ReplicaSet
 metadata:
@@ -84,7 +84,7 @@ spec:
   selector:
     matchLabels:
      type: front-end
-     ```
+```
 
 `kubectl create -f replicaset-definition.yml`
 `kubectl get replicaset`
@@ -154,10 +154,12 @@ metadata:
 data:
   APP_COLOR: blue
   APP_MODE: prod
-  ```
+```
+
 ### Reference config map in pod
 
 Whole Env
+
 ```
 spec: 
 containers:
@@ -167,6 +169,7 @@ containers:
             name: app-config
         ```
 Specific Key 
+
 ```
 spec: 
 containers:
@@ -177,8 +180,10 @@ containers:
           configMapKeyRef:
             name: app-config
             key: APP_COLOR
-        ```
+```
+
 Volume
+
 ```
 spec: 
 containers:
@@ -187,7 +192,7 @@ containers:
       - name: app-config-volume
         configMap:
           name: app-config
-        ```
+```
 
 ## Secrets
 
@@ -197,6 +202,7 @@ containers:
 ### Reference secrets in pod
 
 Whole Env
+
 ```
 spec: 
 containers:
@@ -204,8 +210,10 @@ containers:
     envFrom:
         - secretRef:
             name: app-config
-        ```
+```
+
 Specific Key 
+
 ```
 spec: 
 containers:
@@ -216,8 +224,10 @@ containers:
           secretKeyRef:
             name: app-secret
             key: DB_Password
-        ```
+```
+
 Volume
+
 ```
 spec: 
 containers:
@@ -227,6 +237,7 @@ containers:
         secret:
           name: app-config
 ```
+
 ## Security Context
 
 * Containers per default run as root
@@ -235,18 +246,19 @@ containers:
 * Keeps the user from manipulating the shared kernel on the host machine
 * Capabilities can be granted from within the securityContext
 
-    ```
+```
     ...
     securityContext:
       runAsUser: 1000
       capabilites:
         add: ["SYS_TIME"]
-        ```
+```
+
 ## Resources
 
 * Resources node can be defined per container in the pod
 
-    ```
+```
     resources:
       requests:
         memory: "1Gi"
@@ -254,7 +266,7 @@ containers:
       limit:
         memory: "2Gi"
         cpu: 2
-        ```
+```
 ## Taints and Tolerance
 
 * Mechanism to make a node only accept certain pods
@@ -273,7 +285,7 @@ possible values: NoSchedule | PreferNoSchedule | NoExecute
 
 * Assign Pods to certain nodes with a selector
 
-    ```
+```
     kind: Pod
     ...
     spec:
@@ -281,11 +293,180 @@ possible values: NoSchedule | PreferNoSchedule | NoExecute
         ...
       nodeSelector:
         size: Large
-            ```
+```
 
 * The node selector refers to labels assigned on a node
 
-    `kubectl label nodes <node-name> <label-key>=<label-value>`
+`kubectl label nodes <node-name> <label-key>=<label-value>`
 
 * Has its limits: you cant say on label Large or Medium
 * Can't say something like go to any node which is not small
+
+## Node Affinity
+
+* Node affinity can be used for more complex requirements
+
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: disktype
+            operator: In
+            values:
+            - ssd            
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+```
+
+* requiredDuringSchedulingIgnoredDuringExecution wont run a pod if the requirement has not
+been met
+* preferredDuringSchedulingIgnoredDuringExecution is a sofer way and run the pod on any node if
+the requirement cant be met
+
+Example operator:
+
+* In 
+* NotIn
+* Exists
+* DoesNotExist
+* Gt
+* Lt
+
+## Multi Container Pods
+
+Three common patterns:
+
+1. Sidecar
+2. Adapter
+3. Ambassador
+
+Example:
+1. Sidecar: Log-Agent to collectl logs and forward them to a central Log Server
+2. Convert log files to common format for the Log Server
+3. When dealing with multiple environments and therefore different databases an Ambassador could
+   deal with the actual choosing of the concrete database while the application only
+   connects to localhost
+
+
+## Readiness Probe
+
+Pods conditions
+
+* PodScheduled
+* Initialized
+* ContainersReady
+* Ready
+
+* Ready means that the application is running and ready to accept user traffic
+* Used to avoid routing traffic to a Pod which can not reply
+* Traffic is only routed when Pods is marked as running
+
+Different probes exist for different types of applications
+
+```
+readinessProbe:
+  httpGet:
+    path: /api/ready
+    port: 8080
+  initialDelaySeconds: 10G
+  periodSeconds: 5
+  failureThreshold: 8
+```
+
+```
+readinessProbe:
+  tcpSocket:
+    port: 3306
+```
+
+```
+readinessProbe:
+  exec:
+    command:
+    - cat
+    - /app/is_ready
+```
+
+## Liveness Probe
+
+* Application might crashed during runtime?
+* Container still running 
+* Liveness probes look inside the container to identify such cases and restart the pod if
+    required
+* Same configurations possible as with the readinessProbe
+
+## Logging
+
+`kubectl logs -f event-simulator-pod event-simulator`
+
+* -f means follow
+* second parameter is the name of the container inside a multi container pod
+* Can be left if pod only has one container
+
+## Labels, Selectors & Annotations
+
+* Labels and selectors are a method to group things together
+* or filter them by one or multiple criteria
+* Labels are properties attached to each item
+* Selectors help you filter these items
+
+
+labels in pod def:
+
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-webapp
+  labels:
+    app: App1
+    function: Front-End
+spec:
+  ...
+```
+select pod by labels 
+
+`kubectl get pods --selector app=App1`
+
+* Annotations are used to record details for informative purpose
+* Build number, contact details, ...
+
+## Deployment
+
+* Creating a deployment triggers a rollout
+* With deployment revision
+
+
+`kubectl rollout history deployment/myapp-deployment`
+
+There are two types of deployment strategy
+
+1. Recreate (take all old pods down, spawn new pods after)
+2. Rolling update (take one of the old pods down and spwan a pod with the new version after)
+
+* First type creates downtime
+* Rolling update is the default strategy
+
+* Use `kubectl apply` to update deployment and create a new revision
+* Another way is to use `kubectl set image ...`
+* Update creates a new replicaset under the hood
+* Rollback reactivates old replicase
+
+    Commands
+
+* `kubectl create -f deployment-definition.yaml`
+* `kubectl get deployments`
+* `kubectl apply -f deployment-definitionyml`
+* `kubectl set image deplyoment/myapp-deployment nginx=nginx:latest`
+* `kubectl rollout status deployment/myapp-deployment`
+* `kuectl rollout history deployment/myapp-deployment`
+* `kubectl rollout undo deployment/myapp-deployment`
