@@ -471,3 +471,141 @@ There are two types of deployment strategy
 * `kubectl rollout status deployment/myapp-deployment`
 * `kuectl rollout history deployment/myapp-deployment`
 * `kubectl rollout undo deployment/myapp-deployment`
+
+
+## Jobs
+
+* Jobs goal is it to successfuly execute a container a specified amount of times
+
+```
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: random-error-job
+spec:
+  completions: 3
+  parallelism: 3
+  template:
+    spec:
+      containers:
+        - name: random-error
+          image: some-image
+      restartPolicy: Never
+```
+
+### Cronjob
+
+```
+apiVersion: batch/v1beta
+kind: CronJob
+metadata:
+  name: random-error-cron-job
+spec:
+  schedule: "*/1 * * * *"
+  jobTemplate:
+  spec:
+    completions: 3
+    parallelism: 3
+    template:
+      spec:
+        containers:
+          - name: random-error
+            image: some-image
+        restartPolicy: Never
+```
+## Services
+
+* Enable communication between various components within and outside the application
+* Connect applications together with other applications or users
+* NodePort Service: Forwards requests coming to a certain port of the node to a certain port
+    of the pod within the node
+* ClusterIP: Service creates a virtual IP inside the cluster to enable communication between
+    different services (for example frontend to backend communication)
+* LoadBalancer: Creates loadbalancer for our application in supported cloud providers
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-service
+spec:
+  type: NodePort
+  ports:
+    - targetPort: 8080
+      port: 8080
+      nodePort: 30008
+  selector:
+    - app: myapp
+      type: front-end
+```
+
+
+### NodePort
+
+Terms defined from the viewpoint of the service 
+
+* TargetPort: Port on the Pod
+* Port: The port on the service itself
+* NodePort: Port on the node itself to access the application externally (range 30000 - 32767)
+
+* The service is kind of a virtual server inside the node
+* Within the cluster it has its own ip adress
+* This IP is called the ClusterIp address
+* Functions as an internal loadbalancer between pods
+* Uses a random algorithm for that
+* Service can provide an interface to different pods on multiple nodes
+* NodePort can be called on any of the available nodes
+
+
+### ClusterIP
+
+* Pod ips cant used for stable communication within the application as they are spawned and
+    removed on demand
+* With multiple replicas which pod should we talk to?
+* A Service provides a common interface to access the pods in a group
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  type: ClusterIP
+  ports:
+    - targetPort: 8080
+      port: 8080
+  selector:
+    - app: myapp
+      type: back-end
+```
+
+## Network Policy
+
+* Kubernetes comes with an "Allow all" rule
+* When traffic is not limited one pod can talk to every other
+* NetworkPolicies are Kubernetes objects
+* With Network policies rules for incoming and outgoing traffic can be configured
+
+## Volumes
+
+Docker:
+
+Bind mount mounts a path of the host system into the container system
+Volume mount /var/lib/docker/volumes/volume _name is created and can be reused
+
+## Persistent Volumes
+
+* Manage storage more centrally
+* Cluster wide pool of storage
+* Users can use storage from that pool with persistent volume claims
+
+```
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-voll
+spec:
+  accessModes:
+    - ReadWriteOnce
+```
+
