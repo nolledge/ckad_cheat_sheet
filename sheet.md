@@ -476,6 +476,7 @@ There are two types of deployment strategy
 ## Jobs
 
 * Jobs goal is it to successfuly execute a container a specified amount of times
+* A job is only completed when the container exits without failure
 
 ```
 apiVersion: batch/v1
@@ -608,4 +609,98 @@ spec:
   accessModes:
     - ReadWriteOnce
 ```
+access modes:
 
+ReadOnlyMany
+ReadWriteOnce
+ReadWriteMany
+
+once and many relate to single or multi node access
+
+
+## Persistent Volume Claims
+
+* Separate object 
+* Admin creates Persistent Volumes
+* User creates persistent volume claims to use the storage
+* Once the claims are created Kubernetes binds the claims to the Persistent Volumes
+* Binding is based on the request and the properties of the PersistedVolume
+* Every persistent Volume Claim is bound to a single Persistent Volume
+* Binding is done by criteria like
+    * Sufficient Capacity
+    * Access Modes
+    * Volume Modes
+    * Storage Class
+* Apart from these criteria also selector based matching is possible
+* Relation is 1:1 no second claim on a Persistent Volume
+
+```
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: myclaim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+```
+
+* Per default a persisted volume is not deleted if the claim is deleted
+* persistentVolumeReclaumPolicy_: Retain | Delete | Recycle
+
+Use claim inside a POT
+
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+spec:
+  containers:
+    - name: myfrontend
+      image: nginx
+      volumeMounts:
+      - mountPath: "/var/www/html"
+        name: mypd
+  volumes:
+    - name: mypd
+      persistentVolumeClaim:
+        claimName: myclaim
+
+```
+Same for ReplicaSets or Deployments
+
+
+## Tips for certification
+
+### Setup Environment:
+
+alias k=kubectl
+
+#### vim: 
+
+set tabstop=2
+set expandtab
+set shiftwidth=2
+
+#### variables:
+
+export do="--dry-run=client -o yaml"
+
+#### optional to switch namespaces:
+
+alias kn='kubectl config set-context --current --namespace '
+
+#### autocompletion
+
+source <(kubectl completion bash)
+
+complete -F __start_kubectl k # to make it work with the alias k
+
+avoid long filenames for the yamls, use exercise number
+
+### Kubectl explain
+
+kubectl explain --recursive pod
